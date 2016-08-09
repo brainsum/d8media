@@ -20,7 +20,6 @@ use Drupal\Core\Path\CurrentPathStack;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\entity_browser\Ajax\SelectEntitiesCommand;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -112,7 +111,7 @@ class Modal extends DisplayBase implements DisplayRouterInterface {
     return [
       'width' => '650',
       'height' => '500',
-      'link_text' => t('Select entities'),
+      'link_text' => $this->t('Select entities'),
     ] + parent::defaultConfiguration();
   }
 
@@ -197,6 +196,7 @@ class Modal extends DisplayBase implements DisplayRouterInterface {
 
     $field_name = $triggering_element['#parents'][0];
     $element_name = $this->configuration['entity_browser_id'];
+    $name = 'entity_browser_iframe_' . $element_name;
     $content = [
       '#type' => 'html_tag',
       '#tag' => 'iframe',
@@ -207,7 +207,8 @@ class Modal extends DisplayBase implements DisplayRouterInterface {
         'height' => $this->configuration['height'] - 90,
         'frameborder' => 0,
         'style' => 'padding:0',
-        'name' => 'entity_browser_iframe_' . Html::cleanCssIdentifier($element_name),
+        'name' => $name,
+        'id' => $name,
       ],
     ];
     $html = drupal_render($content);
@@ -224,14 +225,6 @@ class Modal extends DisplayBase implements DisplayRouterInterface {
       'resizable' => 0,
     ]));
     return $response;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function selectionCompleted(array $entities) {
-    $this->entities = $entities;
-    $this->eventDispatcher->addListener(KernelEvents::RESPONSE, [$this, 'propagateSelection']);
   }
 
   /**
@@ -356,13 +349,13 @@ class Modal extends DisplayBase implements DisplayRouterInterface {
       '#type' => 'number',
       '#title' => $this->t('Width of the modal'),
       '#default_value' => $configuration['width'],
-      '#description' => t('Empty value for responsive width.'),
+      '#description' => $this->t('Empty value for responsive width.'),
     ];
     $form['height'] = [
       '#type' => 'number',
       '#title' => $this->t('Height of the modal'),
       '#default_value' => $configuration['height'],
-      '#description' => t('Empty value for responsive height.'),
+      '#description' => $this->t('Empty value for responsive height.'),
     ];
     $form['link_text'] = [
       '#type' => 'textfield',

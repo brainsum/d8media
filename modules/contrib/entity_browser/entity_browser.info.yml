@@ -8,8 +8,8 @@ test_dependencies:
   - token
 configure: entity.entity_browser.collection
 
-# Information added by Drupal.org packaging script on 2016-07-22
-version: '8.x-1.0-alpha6+15-dev'
+# Information added by Drupal.org packaging script on 2016-08-08
+version: '8.x-1.0-alpha7+8-dev'
 core: '8.x'
 project: 'entity_browser'
-datestamp: 1469179141
+datestamp: 1470657541
