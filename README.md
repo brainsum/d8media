@@ -6,6 +6,7 @@ Install a fresh Drupal 8.1.8 standard profile and then copy with overwrite the c
 
 on Linux or OS-X:
 
+```
 wget --no-check-certificate https://ftp.drupal.org/files/projects/drupal-8.1.8.tar.gz 
 tar xzf drupal-8.1.8.tar.gz
 wget --no-check-certificate https://github.com/brainsum/d8media/archive/master.zip
