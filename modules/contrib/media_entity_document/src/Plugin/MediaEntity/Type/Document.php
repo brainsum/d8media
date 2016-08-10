@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\media_entity_document\Plugin\MediaEntity\Type;
 
 use Drupal\media_entity\MediaInterface;
@@ -21,8 +22,8 @@ class Document extends MediaTypeBase {
    */
   public function providedFields() {
     return [
-      'mime' => t('File MIME'),
-      'size' => t('Size'),
+      'mime' => $this->t('File MIME'),
+      'size' => $this->t('Size'),
     ];
   }
 
@@ -31,11 +32,10 @@ class Document extends MediaTypeBase {
    */
   public function getField(MediaInterface $media, $name) {
     $source_field = $this->configuration['source_field'];
-    $property_name = $media->{$source_field}->first()->mainPropertyName();
 
     // Get the file document.
     /** @var \Drupal\file\FileInterface $file */
-    $file = $this->entityTypeManager->getStorage('file')->load($media->{$source_field}->first()->{$property_name});
+    $file = $media->{$source_field}->entity;
 
     // Return the field.
     switch ($name) {
@@ -58,6 +58,8 @@ class Document extends MediaTypeBase {
     $bundle = $form_state->getFormObject()->getEntity();
     $options = [];
     $allowed_field_types = ['file'];
+
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface $field */
     foreach ($this->entityFieldManager->getFieldDefinitions('media', $bundle->id()) as $field_name => $field) {
       if (in_array($field->getType(), $allowed_field_types) && !$field->getFieldStorageDefinition()->isBaseField()) {
         $options[$field_name] = $field->getLabel();
@@ -66,8 +68,8 @@ class Document extends MediaTypeBase {
 
     $form['source_field'] = [
       '#type' => 'select',
-      '#title' => t('Field with source information'),
-      '#description' => t('Field on media entity that stores Document file. You can create a bundle without selecting a value for this dropdown initially. This dropdown can be populated after adding fields to the bundle.'),
+      '#title' => $this->t('Field with source information'),
+      '#description' => $this->t('Field on media entity that stores Document file. You can create a bundle without selecting a value for this dropdown initially. This dropdown can be populated after adding fields to the bundle.'),
       '#default_value' => empty($this->configuration['source_field']) ? NULL : $this->configuration['source_field'],
       '#options' => $options,
     ];
@@ -81,20 +83,41 @@ class Document extends MediaTypeBase {
   public function thumbnail(MediaInterface $media) {
     $source_field = $this->configuration['source_field'];
     /** @var \Drupal\file\FileInterface $file */
-    $file = $this->entityTypeManager->getStorage('file')->load($media->{$source_field}->target_id);
-    $mimetype = $file->getMimeType();
-    $mimetype = explode('/', $mimetype);
-    $thumbnail = $this->config->get('icon_base') . "/{$mimetype[0]}-{$mimetype[1]}.png";
+    $file = $media->{$source_field}->entity;
 
-    if (!is_file($thumbnail)) {
-      $thumbnail = $this->config->get('icon_base') . "/{$mimetype[1]}.png";
+    if ($file) {
+      $mimetype = $file->getMimeType();
+      $mimetype = explode('/', $mimetype);
+      $thumbnail = $this->config->get('icon_base') . "/{$mimetype[0]}-{$mimetype[1]}.png";
 
       if (!is_file($thumbnail)) {
-        $thumbnail = $this->config->get('icon_base') . '/document.png';
+        $thumbnail = $this->config->get('icon_base') . "/{$mimetype[1]}.png";
+
+        if (!is_file($thumbnail)) {
+          $thumbnail = $this->config->get('icon_base') . '/document.png';
+        }
       }
+    }
+    else {
+      $thumbnail = $this->config->get('icon_base') . '/document.png';
     }
 
     return $thumbnail;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDefaultName(MediaInterface $media) {
+    // The default name will be the filename of the source_field, if present.
+    $source_field = $this->configuration['source_field'];
+
+    /** @var \Drupal\file\FileInterface $file */
+    if (!empty($source_field) && ($file = $media->{$source_field}->entity)) {
+      return $file->getFilename();
+    }
+
+    return parent::getDefaultName($media);
   }
 
 }

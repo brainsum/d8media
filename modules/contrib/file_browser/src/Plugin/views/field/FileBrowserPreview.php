@@ -27,9 +27,11 @@ class FileBrowserPreview extends FieldPluginBase {
 
     // Check if this file is an image.
     $image_factory = \Drupal::service('image.factory');
-    $image = $image_factory->get($file->getFileUri());
 
-    if ($image->isValid()) {
+    // Loading large files is slow, make sure it is an image mime type before
+    // doing that.
+    list($type, ) = explode('/', $file->getMimeType(), 2);
+    if ($type == 'image' && ($image = $image_factory->get($file->getFileUri())) && $image->isValid()) {
       // Fake an ImageItem object.
       $item = new \stdClass();
       $item->width = $image->getWidth();

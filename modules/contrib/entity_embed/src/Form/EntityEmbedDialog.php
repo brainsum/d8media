@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\entity_embed\Form\EntityEmbedDialog.
- */
-
 namespace Drupal\entity_embed\Form;
 
 use Drupal\Component\Utility\Html;
@@ -13,8 +8,10 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Ajax\SetDialogTitleCommand;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -24,7 +21,6 @@ use Drupal\embed\EmbedButtonInterface;
 use Drupal\entity_browser\Events\Events;
 use Drupal\entity_browser\Events\RegisterJSCallbacks;
 use Drupal\entity_embed\EntityEmbedDisplay\EntityEmbedDisplayManager;
-use Drupal\entity_embed\EntityHelperTrait;
 use Drupal\Component\Serialization\Json;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -33,7 +29,13 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * Provides a form to embed entities by specifying data attributes.
  */
 class EntityEmbedDialog extends FormBase {
-  use EntityHelperTrait;
+
+  /**
+   * The entity embed display manager.
+   *
+   * @var \Drupal\entity_embed\EntityEmbedDisplay\EntityEmbedDisplayManager
+   */
+  protected $entityEmbedDisplayManager;
 
   /**
    * The form builder.
@@ -64,6 +66,20 @@ class EntityEmbedDialog extends FormBase {
   protected $entityBrowser;
 
   /**
+   * The entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManager
+   */
+  protected $entityFieldManager;
+
+  /**
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * The entity browser settings from the entity embed button.
    */
   protected $entityBrowserSettings = [];
@@ -71,7 +87,7 @@ class EntityEmbedDialog extends FormBase {
   /**
    * Constructs a EntityEmbedDialog object.
    *
-   * @param \Drupal\entity_embed\EntityEmbedDisplay\EntityEmbedDisplayManager $plugin_manager
+   * @param \Drupal\entity_embed\EntityEmbedDisplay\EntityEmbedDisplayManager $entity_embed_display_manager
    *   The Module Handler.
    * @param \Drupal\Core\Form\FormBuilderInterface $form_builder
    *   The Form Builder.
@@ -79,12 +95,18 @@ class EntityEmbedDialog extends FormBase {
    *   The entity type manager service.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   Event dispatcher service.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
    */
-  public function __construct(EntityEmbedDisplayManager $plugin_manager, FormBuilderInterface $form_builder, EntityTypeManagerInterface $entity_type_manager, EventDispatcherInterface $event_dispatcher) {
-    $this->setDisplayPluginManager($plugin_manager);
+  public function __construct(EntityEmbedDisplayManager $entity_embed_display_manager, FormBuilderInterface $form_builder, EntityTypeManagerInterface $entity_type_manager, EventDispatcherInterface $event_dispatcher, EntityFieldManagerInterface $entity_field_manager, ModuleHandlerInterface $module_handler) {
+    $this->entityEmbedDisplayManager = $entity_embed_display_manager;
     $this->formBuilder = $form_builder;
     $this->entityTypeManager = $entity_type_manager;
     $this->eventDispatcher = $event_dispatcher;
+    $this->entityFieldManager = $entity_field_manager;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -95,7 +117,9 @@ class EntityEmbedDialog extends FormBase {
       $container->get('plugin.manager.entity_embed.display'),
       $container->get('form_builder'),
       $container->get('entity_type.manager'),
-      $container->get('event_dispatcher')
+      $container->get('event_dispatcher'),
+      $container->get('entity_field.manager'),
+      $container->get('module_handler')
     );
   }
 
@@ -130,14 +154,16 @@ class EntityEmbedDialog extends FormBase {
       $form_state->set('entity_element', isset($input['editor_object']) ? $input['editor_object'] : array());
     }
     $entity_element += $form_state->get('entity_element');
-    $entity_element += array(
+    $entity_element += [
       'data-entity-type' => $embed_button->getTypeSetting('entity_type'),
       'data-entity-uuid' => '',
       'data-entity-embed-display' => 'entity_reference:entity_reference_entity_view',
-      'data-entity-embed-settings' => array(),
-    );
+      'data-entity-embed-display-settings' => isset($form_state->get('entity_element')['data-entity-embed-settings']) ? $form_state->get('entity_element')['data-entity-embed-settings'] : [],
+    ];
     $form_state->set('entity_element', $entity_element);
-    $form_state->set('entity', $this->loadEntity($entity_element['data-entity-type'], $entity_element['data-entity-uuid']));
+    $entity = $this->entityTypeManager->getStorage($entity_element['data-entity-type'])
+      ->loadByProperties(['uuid' => $entity_element['data-entity-uuid']]);
+    $form_state->set('entity', current($entity) ?: NULL);
 
     if (!$form_state->get('step')) {
       // If an entity has been selected, then always skip to the embed options.
@@ -199,7 +225,7 @@ class EntityEmbedDialog extends FormBase {
     // the label field definition.
     $entity_type = $this->entityTypeManager->getDefinition($entity_element['data-entity-type']);
     if ($entity_type->isSubclassOf('\Drupal\Core\Entity\FieldableEntityInterface') && $entity_type->hasKey('label')) {
-      $field_definitions = $this->entityManager()->getBaseFieldDefinitions($entity_type->id());
+      $field_definitions = $this->entityFieldManager->getBaseFieldDefinitions($entity_type->id());
       if (isset($field_definitions[$entity_type->getKey('label')])) {
         $label = $field_definitions[$entity_type->getKey('label')]->getLabel();
       }
@@ -209,19 +235,13 @@ class EntityEmbedDialog extends FormBase {
 
     if ($this->entityBrowser) {
       $this->eventDispatcher->addListener(Events::REGISTER_JS_CALLBACKS, [$this, 'registerJSCallback']);
-
-      $form['entity_browser']['#theme_wrappers'] = ['container'];
-      $form['entity_browser']['browser'] = $this->entityBrowser->getDisplay()->displayEntityBrowser($form_state);
-      $form['entity_browser']['entity_id'] = [
-        '#type' => 'hidden',
-        '#default_value' => $entity ? $entity->id() : '',
-        '#attributes' => ['class' => ['eb-target']]
-      ];
-      $form['#attached']['library'][] = 'entity_browser/common';
-      $form['#attached']['drupalSettings']['entity_browser'] = [
-        $this->entityBrowser->getDisplay()->getUuid() => [
-          'cardinality' => 1
-        ]
+      $form['entity_browser'] = [
+        '#type' => 'entity_browser',
+        '#entity_browser' => $this->entityBrowser->id(),
+        '#cardinality' => 1,
+        '#entity_browser_validators' => [
+          'entity_type' => ['type' => $entity_element['data-entity-type']]
+        ],
       ];
     }
     else {
@@ -394,15 +414,15 @@ class EntityEmbedDialog extends FormBase {
       '#required' => TRUE,
       '#ajax' => array(
         'callback' => '::updatePluginConfigurationForm',
-        'wrapper' => 'data-entity-embed-settings-wrapper',
+        'wrapper' => 'data-entity-embed-display-settings-wrapper',
         'effect' => 'fade',
       ),
       // Hide the selection if only one option is available.
       '#access' => count($display_plugin_options) > 1,
     );
-    $form['attributes']['data-entity-embed-settings'] = array(
+    $form['attributes']['data-entity-embed-display-settings'] = array(
       '#type' => 'container',
-      '#prefix' => '<div id="data-entity-embed-settings-wrapper">',
+      '#prefix' => '<div id="data-entity-embed-display-settings-wrapper">',
       '#suffix' => '</div>',
     );
     $form['attributes']['data-embed-button'] = array(
@@ -411,13 +431,13 @@ class EntityEmbedDialog extends FormBase {
     );
     $plugin_id = !empty($values['attributes']['data-entity-embed-display']) ? $values['attributes']['data-entity-embed-display'] : $entity_element['data-entity-embed-display'];
     if (!empty($plugin_id)) {
-      if (is_string($entity_element['data-entity-embed-settings'])) {
-        $entity_element['data-entity-embed-settings'] = Json::decode($entity_element['data-entity-embed-settings']);
+      if (is_string($entity_element['data-entity-embed-display-settings'])) {
+        $entity_element['data-entity-embed-display-settings'] = Json::decode($entity_element['data-entity-embed-display-settings']);
       }
-      $display = $this->displayPluginManager()->createInstance($plugin_id, $entity_element['data-entity-embed-settings']);
+      $display = $this->entityEmbedDisplayManager->createInstance($plugin_id, $entity_element['data-entity-embed-display-settings']);
       $display->setContextValue('entity', $entity);
       $display->setAttributes($entity_element);
-      $form['attributes']['data-entity-embed-settings'] += $display->buildConfigurationForm($form, $form_state);
+      $form['attributes']['data-entity-embed-display-settings'] += $display->buildConfigurationForm($form, $form_state);
     }
 
     // When Drupal core's filter_align is being used, the text editor may
@@ -500,9 +520,9 @@ class EntityEmbedDialog extends FormBase {
    *   The current state of the form.
    */
   public function validateSelectStep(array $form, FormStateInterface $form_state) {
-    if ($form_state->hasValue(['entity_browser', 'entity_id'])) {
-      $id = trim($form_state->getValue(['entity_browser', 'entity_id']));
-      $element = $form['entity_browser']['entity_id'];
+    if ($form_state->hasValue(['entity_browser', 'entities'])) {
+      $id = $form_state->getValue(['entity_browser', 'entities', 0])->id();
+      $element = $form['entity_browser'];
     }
     else {
       $id = trim($form_state->getValue(['entity_id']));
@@ -510,7 +530,8 @@ class EntityEmbedDialog extends FormBase {
     }
 
     $entity_type = $form_state->getValue(['attributes', 'data-entity-type']);
-    if ($entity = $this->loadEntity($entity_type, $id)) {
+
+    if ($entity = $this->entityTypeManager->getStorage($entity_type)->load($id)) {
       if (!$entity->access('view')) {
         $form_state->setError($element, $this->t('Unable to access @type entity @id.', array('@type' => $entity_type, '@id' => $id)));
       }
@@ -550,10 +571,12 @@ class EntityEmbedDialog extends FormBase {
   public function validateEmbedStep(array $form, FormStateInterface $form_state) {
     // Validate configuration forms for the Entity Embed Display plugin used.
     $entity_element = $form_state->getValue('attributes');
-    $entity = $this->loadEntity($entity_element['data-entity-type'], $entity_element['data-entity-uuid']);
+    $entity = $this->entityTypeManager->getStorage($entity_element['data-entity-type'])
+      ->loadByProperties(['uuid' => $entity_element['data-entity-uuid']]);
+    $entity = current($entity) ?: NULL;
     $plugin_id = $entity_element['data-entity-embed-display'];
-    $plugin_settings = $entity_element['data-entity-embed-settings'] ?: array();
-    $display = $this->displayPluginManager()->createInstance($plugin_id, $plugin_settings);
+    $plugin_settings = $entity_element['data-entity-embed-display-settings'] ?: array();
+    $display = $this->entityEmbedDisplayManager->createInstance($plugin_id, $plugin_settings);
     $display->setContextValue('entity', $entity);
     $display->setAttributes($entity_element);
     $display->validateConfigurationForm($form, $form_state);
@@ -573,7 +596,7 @@ class EntityEmbedDialog extends FormBase {
    *   The form state.
    */
   public function updatePluginConfigurationForm(array &$form, FormStateInterface $form_state) {
-    return $form['attributes']['data-entity-embed-settings'];
+    return $form['attributes']['data-entity-embed-display-settings'];
   }
 
   /**
@@ -705,10 +728,12 @@ class EntityEmbedDialog extends FormBase {
 
     // Submit configuration form the selected Entity Embed Display plugin.
     $entity_element = $form_state->getValue('attributes');
-    $entity = $this->loadEntity($entity_element['data-entity-type'], $entity_element['data-entity-uuid']);
+    $entity = $this->entityTypeManager->getStorage($entity_element['data-entity-type'])
+      ->loadByProperties(['uuid' => $entity_element['data-entity-uuid']]);
+    $entity = current($entity);
     $plugin_id = $entity_element['data-entity-embed-display'];
-    $plugin_settings = $entity_element['data-entity-embed-settings'] ?: array();
-    $display = $this->displayPluginManager()->createInstance($plugin_id, $plugin_settings);
+    $plugin_settings = $entity_element['data-entity-embed-display-settings'] ?: array();
+    $display = $this->entityEmbedDisplayManager->createInstance($plugin_id, $plugin_settings);
     $display->setContextValue('entity', $entity);
     $display->setAttributes($entity_element);
     $display->submitConfigurationForm($form, $form_state);
@@ -725,8 +750,8 @@ class EntityEmbedDialog extends FormBase {
     }
     else {
       // Serialize entity embed settings to JSON string.
-      if (!empty($values['attributes']['data-entity-embed-settings'])) {
-        $values['attributes']['data-entity-embed-settings'] = Json::encode($values['attributes']['data-entity-embed-settings']);
+      if (!empty($values['attributes']['data-entity-embed-display-settings'])) {
+        $values['attributes']['data-entity-embed-display-settings'] = Json::encode($values['attributes']['data-entity-embed-display-settings']);
       }
 
       // Filter out empty attributes.
@@ -735,7 +760,7 @@ class EntityEmbedDialog extends FormBase {
       });
 
       // Allow other modules to alter the values before getting submitted to the WYSIWYG.
-      $this->moduleHandler()->alter('entity_embed_values', $values, $entity, $display, $form_state);
+      $this->moduleHandler->alter('entity_embed_values', $values, $entity, $display, $form_state);
 
       $response->addCommand(new EditorDialogSave($values));
       $response->addCommand(new CloseModalDialogCommand());
@@ -769,7 +794,7 @@ class EntityEmbedDialog extends FormBase {
    *   List of allowed Entity Embed Display plugins.
    */
   public function getDisplayPluginOptions(EmbedButtonInterface $embed_button, EntityInterface $entity) {
-    $plugins = $this->displayPluginManager->getDefinitionOptionsForEntity($entity);
+    $plugins = $this->entityEmbedDisplayManager->getDefinitionOptionsForEntity($entity);
 
     if ($allowed_plugins = $embed_button->getTypeSetting('display_plugins')) {
       $plugins = array_intersect_key($plugins, array_flip($allowed_plugins));

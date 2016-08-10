@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Contains \Drupal\dropzonejs_eb_widget\Plugin\EntityBrowser\Widget\MediaEntityDropzoneJsEbWidget.
- */
-
 namespace Drupal\dropzonejs_eb_widget\Plugin\EntityBrowser\Widget;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -11,6 +7,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Utility\Token;
 use Drupal\dropzonejs\DropzoneJsUploadSaveInterface;
 use Drupal\dropzonejs\Events\DropzoneMediaEntityCreateEvent;
 use Drupal\dropzonejs\Events\Events;
@@ -19,8 +16,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Provides an Entity Browser widget that uploads new files and saves media
- * entities.
+ * Provides an Entity Browser widget that uploads uploads media entities.
+ *
+ * Widget will upload files and attach them to the media entity of bundle that
+ * is defined in the configuration.
  *
  * @EntityBrowserWidget(
  *   id = "dropzonejs_media_entity",
@@ -36,13 +35,6 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
   protected $moduleHandler;
-
-  /**
-   * Media bundle.
-   *
-   * @var \Drupal\media_entity\MediaBundleInterface
-   */
-  protected $bundle;
 
   /**
    * Constructs widget plugin.
@@ -66,8 +58,8 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EventDispatcherInterface $event_dispatcher, EntityTypeManagerInterface $entity_type_manager, WidgetValidationManager $validation_manager, DropzoneJsUploadSaveInterface $dropzonejs_upload_save, AccountProxyInterface $current_user, ModuleHandlerInterface $module_handler) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $event_dispatcher, $entity_type_manager, $validation_manager, $dropzonejs_upload_save, $current_user);
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EventDispatcherInterface $event_dispatcher, EntityTypeManagerInterface $entity_type_manager, WidgetValidationManager $validation_manager, DropzoneJsUploadSaveInterface $dropzonejs_upload_save, AccountProxyInterface $current_user, Token $token, ModuleHandlerInterface $module_handler) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $event_dispatcher, $entity_type_manager, $validation_manager, $dropzonejs_upload_save, $current_user, $token);
     $this->moduleHandler = $module_handler;
   }
 
@@ -84,10 +76,10 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
       $container->get('plugin.manager.entity_browser.widget_validation'),
       $container->get('dropzonejs.upload_save'),
       $container->get('current_user'),
+      $container->get('token'),
       $container->get('module_handler')
     );
   }
-
 
   /**
    * {@inheritdoc}
@@ -102,15 +94,12 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
    * Returns the media bundle that this widget creates.
    *
    * @return \Drupal\media_entity\MediaBundleInterface
+   *   Media bundle.
    */
   protected function getBundle() {
-    if (!$this->bundle) {
-      $this->bundle = $this->entityTypeManager
-        ->getStorage('media_bundle')
-        ->load($this->configuration['media_entity_bundle']);
-    }
-
-    return $this->bundle;
+    return $this->entityTypeManager
+      ->getStorage('media_bundle')
+      ->load($this->configuration['media_entity_bundle']);
   }
 
   /**
@@ -141,7 +130,7 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
     else {
       $form['media_entity_bundle']['#disabled'] = TRUE;
       $form['media_entity_bundle']['#description'] = $this->t('You must @create_bundle before using this widget.', [
-        '@create_bundle' => Link::createFromRoute($this->t('create a media bundle'), 'media.bundle_add')->toString()
+        '@create_bundle' => Link::createFromRoute($this->t('create a media bundle'), 'media.bundle_add')->toString(),
       ]);
     }
 
@@ -167,14 +156,15 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
    */
   public function prepareEntities(array $form, FormStateInterface $form_state) {
     $entities = [];
+    $bundle = $this->getBundle();
 
     foreach (parent::prepareEntities($form, $form_state) as $file) {
       $entities[] = $this->entityTypeManager->getStorage('media')->create([
-        'bundle' => $this->getBundle()->id(),
-        $this->getBundle()->getTypeConfiguration()['source_field'] => $file,
+        'bundle' => $bundle->id(),
+        $bundle->getTypeConfiguration()['source_field'] => $file,
         'uid' => $this->currentUser->id(),
         'status' => TRUE,
-        'type' => $this->getBundle()->getType()->getPluginId(),
+        'type' => $bundle->getType()->getPluginId(),
       ]);
     }
 
@@ -185,16 +175,18 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
    * {@inheritdoc}
    */
   public function submit(array &$element, array &$form, FormStateInterface $form_state) {
+    /** @var \Drupal\media_entity\MediaInterface[] $media_entities */
     $media_entities = $this->prepareEntities($form, $form_state);
     $source_field = $this->getBundle()->getTypeConfiguration()['source_field'];
 
     foreach ($media_entities as &$media_entity) {
       $file = $media_entity->$source_field->entity;
-      // This saves the file.
-      $file = file_move($file, $this->getUploadLocation(), FILE_EXISTS_RENAME);
-      $file = $media_entity->$source_field->entity = $file;
       $event = $this->eventDispatcher->dispatch(Events::MEDIA_ENTITY_CREATE, new DropzoneMediaEntityCreateEvent($media_entity, $file, $form, $form_state, $element));
       $media_entity = $event->getMediaEntity();
+      // If we don't save file at this point Media entity creates another file
+      // entity with same uri for the thumbnail. That should probably be fixed
+      // in Media entity, but this workaround should work for now.
+      $media_entity->$source_field->entity->save();
       $media_entity->save();
     }
 
@@ -204,10 +196,4 @@ class MediaEntityDropzoneJsEbWidget extends DropzoneJsEbWidget {
     }
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function __sleep() {
-    return array_diff(parent::__sleep(), ['bundle']);
-  }
 }

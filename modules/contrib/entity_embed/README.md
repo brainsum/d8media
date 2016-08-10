@@ -29,7 +29,7 @@ Entity Embed can be installed via the
   * If the text format uses the 'Limit allowed HTML tags and correct
     faulty HTML' filter, ensure the necessary tags and attributes were
     automatically whitelisted:
-    ```<drupal-entity data-entity-type data-entity-uuid data-view-mode data-entity-embed-display data-entity-embed-settings data-align data-caption data-embed-button>```
+    ```<drupal-entity data-entity-type data-entity-uuid data-view-mode data-entity-embed-display data-entity-embed-display-settings data-align data-caption data-embed-button>```
     appears in the 'Allowed HTML tags' setting.  
     *Warning: If you were using the module in very early pre-alpha
     stages you might need to add `data-entity-id` to the list of allowed
@@ -49,18 +49,19 @@ Entity Embed can be installed via the
 * Click on the 'E' button in the text editor.
 * Enter part of the title of the entity you're looking for and select
   one of the search results.
-* For **Display as**, choose one of the following options:
-  * Rendered Entity
+* If the entity you select is a node entity, for **Display as** you can choose
+  one of the following options:
   * Entity ID
   * Label
-* If chosen **Rendered Entity**, choose one of the following options for
-  **View mode**:
-  * Default
   * Full content
   * RSS
   * Search index
   * Search result highlighting input
+  * Teaser
+* The last five options depend on the view modes you have on the entity.
 * Optionally, choose to align left, center or right.
+**Rendered Entity** was available before but now the view modes are
+ available as entity embed display plugins.
 
 ## Embedding entities without WYSIWYG
 
@@ -70,7 +71,7 @@ that is used to embed the actual entity.
 
 ### Example:
 ```html
-<drupal-entity data-entity-type="node" data-entity-uuid="07bf3a2e-1941-4a44-9b02-2d1d7a41ec0e" data-entity-embed-display="entity_reference:entity_reference_entity_view" data-entity-embed-settings='{"view_mode":"teaser"}' />
+<drupal-entity data-entity-type="node" data-entity-uuid="07bf3a2e-1941-4a44-9b02-2d1d7a41ec0e" data-entity-embed-display="entity_reference:entity_reference_entity_view" data-entity-embed-display-settings='{"view_mode":"teaser"}' />
 ```
 
 ## Entity Embed Display Plugins
@@ -90,7 +91,7 @@ different Entity Embed Display plugins out of the box:
   and the file is an image.
 
 Configuration for the Entity Embed Display plugin can be provided by
-using a `data-entity-embed-settings` attribute, which contains a
+using a `data-entity-embed-display-settings` attribute, which contains a
 JSON-encoded array value. Note that care must be used to use single
 quotes around the attribute value since JSON-encoded arrays typically
 contain double quotes.

@@ -17,8 +17,8 @@ dependencies:
   - text
   - views
 
-# Information added by Drupal.org packaging script on 2016-07-22
-version: '8.x-1.x-dev'
+# Information added by Drupal.org packaging script on 2016-08-03
+version: '8.x-1.0-alpha1+0-dev'
 core: '8.x'
 project: 'file_browser'
-datestamp: 1469212165
+datestamp: 1470190459
