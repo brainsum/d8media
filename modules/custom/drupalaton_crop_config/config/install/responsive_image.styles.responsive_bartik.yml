@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - image.style.crop_16_9
+    - image.style.crop_4_3
+  theme:
+    - bartik
+id: responsive_bartik
+label: 'Responsive Bartik'
+image_style_mappings:
+  -
+    breakpoint_id: bartik.wide
+    multiplier: 1x
+    image_mapping_type: image_style
+    image_mapping: crop_16_9
+  -
+    breakpoint_id: bartik.narrow
+    multiplier: 1x
+    image_mapping_type: image_style
+    image_mapping: crop_4_3
+breakpoint_group: bartik
+fallback_image_style: crop_4_3

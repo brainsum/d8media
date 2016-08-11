@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - crop
+name: crop_16_9
+label: 'Crop 16:9'
+effects:
+  625e13d5-2955-4d1c-838f-ea2357122772:
+    uuid: 625e13d5-2955-4d1c-838f-ea2357122772
+    id: crop_crop
+    weight: 1
+    data:
+      crop_type: crop_16_9
+  239202d8-3fd5-44fa-a31b-1060f27ea8a3:
+    uuid: 239202d8-3fd5-44fa-a31b-1060f27ea8a3
+    id: image_scale_and_crop
+    weight: 2
+    data:
+      width: 853
+      height: 480

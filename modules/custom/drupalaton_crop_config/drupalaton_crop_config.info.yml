@@ -1,0 +1,8 @@
+name: Drupalaton Crop Config
+type: module
+description: Base configuration for Crop+Responsive
+core: 8.x
+package: Drupalaton2016
+dependencies:
+  - image_widget_crop
+  - responsive_image
