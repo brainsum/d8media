@@ -1,0 +1,111 @@
+<?php
+
+/**
+ * @file
+ * Contains form_mode_manager.module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_entity_type_alter().
+ */
+function form_mode_manager_entity_type_alter(array &$entity_types) {
+  /** @var \Drupal\Core\Entity\EntityDisplayRepository[] $display_modes_list */
+  $form_modes = \Drupal::service('entity_display.repository')->getAllFormModes();
+  foreach ($form_modes as $entity_type => $display_modes) {
+    /* @var \Drupal\Core\Entity\EntityTypeInterface $entity */
+    $entity = $entity_types[$entity_type];
+    foreach ($display_modes as $machine_name => $form_display) {
+      if ($machine_name != 'register') {
+        // Get the correct canonical path to add operation.
+        $path = $entity->getLinkTemplate('canonical') . "/$machine_name";
+        $default_handler_class = $entity->getHandlerClasses()['form']['default'];
+        $entity->setFormClass($machine_name, $default_handler_class)
+          ->setLinkTemplate($machine_name, $path);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_operation().
+ */
+function form_mode_manager_entity_operation(\Drupal\Core\Entity\EntityInterface $entity) {
+  $operations = [];
+  $form_modes = \Drupal::service('entity_display.repository')->getAllFormModes();
+  $account = \Drupal::currentUser();
+  if (isset($form_modes[$entity->getEntityTypeId()])) {
+    $current_entity_operations = $form_modes[$entity->getEntityTypeId()];
+    foreach ($current_entity_operations as $machine_name => $form_mode) {
+      if ($machine_name != 'register' && ($account->hasPermission("use {$form_mode['id']} form mode") && $entity->hasLinkTemplate($machine_name))) {
+        $operations += [
+          $machine_name => [
+            'title' => t('Edit as @label', ['@label' => $form_mode['label']])->render(),
+            'url' => $entity->toUrl($machine_name),
+            'weight' => 0,
+          ],
+        ];
+      }
+    }
+  }
+  return $operations;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function form_mode_manager_theme() {
+  return [
+    'form_mode_manager_add_list' => [
+      'variables' => ['content' => NULL, 'form_mode' => NULL],
+    ]
+  ];
+}
+
+/**
+ * Prepares variables for list of available entity type templates.
+ *
+ * Default template: form-mode-manager-add-list.html.twig.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - content: An array of content types.
+ *
+ * @see \Drupal\form_mode_manager\Controller\FormModeManagerController::addPage()
+ */
+function template_preprocess_form_mode_manager_add_list(&$variables) {
+  $variables['types'] = [];
+  if (!empty($variables['content'])) {
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityBundleBase $type */
+    foreach ($variables['content'] as $type) {
+      $variables['types'][$type->id()] = [
+        'type' => $type->id(),
+        'add_link' => Link::fromTextAndUrl($type->label(), new Url('entity.add.' . $variables['form_mode'],['entity_bundle_id' => $type->id(), 'form_display' => $variables['form_mode']])),
+        'description' => [
+          // Do verify it because "contact" entity not have description.
+          '#markup' => (method_exists($type, 'getDescription')) ? $type->getDescription() : $type->label()
+        ],
+      ];
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function form_mode_manager_entity_update(EntityInterface $entity) {
+  if ($entity instanceof \Drupal\Core\Entity\Entity\EntityFormDisplay) {
+      $parent_entity = \Drupal::entityTypeManager()->getStorage($entity->getTargetEntityTypeId())->getEntityType();
+    // When user enable an form_mode we can create all routes/elements to use/view it on entity lists.
+    if (!$parent_entity->hasLinkTemplate("{$entity->getMode()}") && ($entity->status() && $entity->getMode() != 'default')) {
+      // @TODO Found another solution to flush specific cache to,
+      // entities views listing cache each element and it's impossible,
+      // to predict the name of entity listing.
+      drupal_flush_all_caches();
+    }
+  }
+}
