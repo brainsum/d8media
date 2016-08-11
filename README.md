@@ -1,6 +1,6 @@
 # d8media
 
-A helper repository with libraries, modules, ~~patches~~ for our Drupal 8 media workshop.
+A helper repository with libraries, modules, ~~patches~~ for our Drupal 8 media workshop ( http://2016.drupalaton.hu/schedule#speaker-221 ).
 
 Install a fresh Drupal 8.1.8 standard profile and then copy with overwrite the contents of this repository onto it.
 
