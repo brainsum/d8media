@@ -2,6 +2,10 @@
 
 A helper repository with libraries, modules, ~~patches~~ for our Drupal 8 media workshop ( http://2016.drupalaton.hu/schedule#speaker-221 ).
 
+You can download a full copy of the state from:
+http://d8paragraphs.brainsum.com/sites/default/files/d8media/d8media-full.tgz
+http://d8paragraphs.brainsum.com/sites/default/files/d8media/d8media-full.dump.gz
+
 Install a fresh Drupal 8.1.8 standard profile and then copy with overwrite the contents of this repository onto it.
 
 on Linux or OS-X:
