@@ -2,7 +2,7 @@
 
 A helper repository with libraries, modules, ~~patches~~ for our Drupal 8 media workshop ( http://2016.drupalaton.hu/schedule#speaker-221 ).
 
-You can download a full copy of the state from:
+You can download a full copy of the state of the local demo site after the workshop:
 http://d8paragraphs.brainsum.com/sites/default/files/d8media/d8media-full.tgz
 http://d8paragraphs.brainsum.com/sites/default/files/d8media/d8media-full.dump.gz
 
