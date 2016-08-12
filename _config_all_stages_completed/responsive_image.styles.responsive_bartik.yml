@@ -1,0 +1,26 @@
+uuid: 4867211d-e994-4b84-aa32-95a22f8deb1b
+langcode: en
+status: true
+dependencies:
+  config:
+    - image.style.crop_16_9
+    - image.style.crop_4_3
+  theme:
+    - bartik
+_core:
+  default_config_hash: kttgKMy6zIwy5N3DGLocZZ9SaGJNI5nGk37t3gzw3Jg
+id: responsive_bartik
+label: 'Responsive Bartik'
+image_style_mappings:
+  -
+    breakpoint_id: bartik.wide
+    multiplier: 1x
+    image_mapping_type: image_style
+    image_mapping: crop_16_9
+  -
+    breakpoint_id: bartik.narrow
+    multiplier: 1x
+    image_mapping_type: image_style
+    image_mapping: crop_4_3
+breakpoint_group: bartik
+fallback_image_style: crop_4_3

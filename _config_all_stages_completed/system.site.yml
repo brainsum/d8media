@@ -1,0 +1,14 @@
+uuid: d002c43c-f8de-483c-b9e0-d9f24ae06c7a
+name: d8media
+mail: pedro+d8media@brainsum.com
+slogan: ''
+page:
+  403: ''
+  404: ''
+  front: /node/3
+admin_compact_mode: false
+weight_select_max: 100
+langcode: en
+default_langcode: en
+_core:
+  default_config_hash: yXadRE77Va-G6dxhd2kPYapAvbnSvTF6hO4oXiOEynI

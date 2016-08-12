@@ -1,0 +1,31 @@
+uuid: fde5a1cc-2eb1-4edc-8f3a-de8d01caf408
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.gallery
+    - field.field.media.image.field_image
+    - media_entity.bundle.image
+  module:
+    - image
+_core:
+  default_config_hash: ZRmFIF0S4OcIYJHHWBarZIMjyar8-XynysbdP4bnNg8
+id: media.image.gallery
+targetEntityType: media
+bundle: image
+mode: gallery
+content:
+  field_image:
+    weight: 0
+    label: hidden
+    settings:
+      image_style: ''
+      image_link: ''
+    third_party_settings: {  }
+    type: image
+hidden:
+  created: true
+  langcode: true
+  name: true
+  thumbnail: true
+  uid: true

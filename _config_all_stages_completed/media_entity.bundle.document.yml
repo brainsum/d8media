@@ -1,0 +1,19 @@
+uuid: 87e4977b-8fc0-4091-ad4b-37760a736df4
+langcode: en
+status: true
+dependencies:
+  module:
+    - media_entity_document
+_core:
+  default_config_hash: AscIkRbDR8vjcG-kQHPMilcfKC9a8kc8_fDigxpbj_E
+id: document
+label: Document
+description: 'Use Document for uploading document files such as PDF.'
+type: document
+queue_thumbnail_downloads: false
+new_revision: false
+type_configuration:
+  source_field: field_document
+field_map:
+  mime: field_mime_type
+  size: field_document_size

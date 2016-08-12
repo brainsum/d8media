@@ -1,0 +1,41 @@
+uuid: 7b141238-5070-45b1-b6a3-232bc47a47c4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.document.field_document
+    - field.field.media.document.field_document_size
+    - field.field.media.document.field_mime_type
+    - media_entity.bundle.document
+  module:
+    - file
+_core:
+  default_config_hash: 5eFRzM2YUriwC2rnhNxgyO1UGTcAH2DxhHR7dYc0GQI
+id: media.document.default
+targetEntityType: media
+bundle: document
+mode: default
+content:
+  field_document:
+    weight: 1
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+    type: file_generic
+  langcode:
+    type: language_select
+    weight: 2
+    settings: {  }
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_document_size: true
+  field_mime_type: true
+  uid: true

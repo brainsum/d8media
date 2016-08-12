@@ -1,0 +1,18 @@
+uuid: 26e2ca07-aa67-48df-a0c5-9277bc121c49
+langcode: en
+status: true
+dependencies:
+  module:
+    - entity_embed
+    - media_entity
+label: Media
+id: media
+type_id: entity
+type_settings:
+  entity_type: media
+  bundles: {  }
+  display_plugins: {  }
+  entity_browser: ''
+  entity_browser_settings:
+    display_review: false
+icon_uuid: null

@@ -1,0 +1,17 @@
+uuid: 809eff64-05db-4608-84a1-09c6a0e38533
+langcode: en
+status: true
+dependencies:
+  module:
+    - media_entity_slideshow
+_core:
+  default_config_hash: do6nf2CzJDuP6ensV-oZ5mstQpVhu4i_oXxHFbO1Ql0
+id: gallery
+label: Gallery
+description: 'Use Gallery for creating a collection of different media items.'
+type: slideshow
+queue_thumbnail_downloads: false
+new_revision: false
+type_configuration:
+  source_field: field_slide
+field_map: {  }

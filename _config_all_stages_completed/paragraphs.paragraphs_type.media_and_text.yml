@@ -1,0 +1,6 @@
+uuid: 7aa84656-fe4b-4077-b683-bbd26f72573e
+langcode: en
+status: true
+dependencies: {  }
+id: media_and_text
+label: 'media and text'

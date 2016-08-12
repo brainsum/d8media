@@ -1,0 +1,21 @@
+uuid: 23c30819-c7c7-4a75-80ed-1731c1e66ac3
+langcode: en
+status: true
+dependencies:
+  module:
+    - link
+    - media_entity
+_core:
+  default_config_hash: aoPKgi9q90WHsn0-raqGwyYlU5RN5ySNwrnlQ3rnBG8
+id: media.field_tweet_url
+field_name: field_tweet_url
+entity_type: media
+type: link
+settings: {  }
+module: link
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

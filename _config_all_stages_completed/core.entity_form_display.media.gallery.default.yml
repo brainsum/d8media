@@ -1,0 +1,43 @@
+uuid: 30910d37-1f87-408f-9dc1-5327dddac325
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.gallery.field_slide
+    - media_entity.bundle.gallery
+  module:
+    - entity_browser
+_core:
+  default_config_hash: cRrN9aeSbsT6z9P26_7wLuhhXERI42J60ISGPw5vp7I
+id: media.gallery.default
+targetEntityType: media
+bundle: gallery
+mode: default
+content:
+  field_slide:
+    weight: 1
+    settings:
+      entity_browser: gallery_media_library
+      field_widget_display: rendered_entity
+      field_widget_edit: true
+      field_widget_remove: true
+      field_widget_display_settings:
+        view_mode: media_library
+      open: false
+    third_party_settings: {  }
+    type: entity_browser_entity_reference
+  langcode:
+    type: language_select
+    weight: 2
+    settings: {  }
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  uid: true

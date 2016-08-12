@@ -1,0 +1,14 @@
+uuid: e3205ef3-963f-495c-a6a5-2f835e573067
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: e5WGmlOV97o_tQ_755YyjlQfuI33pPPuvcQu3_8Ju04
+label: 'Crop 4:3'
+id: crop_4_3
+description: mobile
+aspect_ratio: '4:3'
+soft_limit_width: null
+soft_limit_height: null
+hard_limit_width: null
+hard_limit_height: null

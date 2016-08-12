@@ -1,0 +1,45 @@
+uuid: 35fd38d1-bf97-4f94-a100-774c62d64efd
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.image.field_image
+    - media_entity.bundle.image
+    - responsive_image.styles.responsive_bartik
+  module:
+    - responsive_image
+_core:
+  default_config_hash: ZRmFIF0S4OcIYJHHWBarZIMjyar8-XynysbdP4bnNg8
+id: media.image.default
+targetEntityType: media
+bundle: image
+mode: default
+content:
+  created:
+    label: hidden
+    type: timestamp
+    weight: 1
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+    third_party_settings: {  }
+  field_image:
+    weight: 2
+    label: hidden
+    settings:
+      responsive_image_style: responsive_bartik
+      image_link: ''
+    third_party_settings: {  }
+    type: responsive_image
+  name:
+    label: hidden
+    type: string
+    weight: 0
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+hidden:
+  langcode: true
+  thumbnail: true
+  uid: true

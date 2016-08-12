@@ -1,0 +1,27 @@
+uuid: 00867682-5d3e-4423-94c8-d73838bf1b43
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_video
+    - media_entity.bundle.video
+  module:
+    - video_embed_field
+_core:
+  default_config_hash: zXhJxUEANLHHCRXa21oq-TUS7ttidx3i_JOmohEslgs
+id: media.video.field_video
+field_name: field_video
+entity_type: media
+bundle: video
+label: 'Video URL'
+description: 'Enter a YouTube/Vimeo video URL. <a href="https://www.drupal.org/project/video_embed_field">Click here</a> to learn about adding more providers.'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  allowed_providers:
+    vimeo: '0'
+    youtube_playlist: '0'
+    youtube: '0'
+field_type: video_embed_field

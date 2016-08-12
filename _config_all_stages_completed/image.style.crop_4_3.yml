@@ -1,0 +1,17 @@
+uuid: bcd04392-95e5-44be-94c3-4b3b0a098a01
+langcode: en
+status: true
+dependencies:
+  module:
+    - crop
+_core:
+  default_config_hash: FNXm81qt6JBmT-ohyP5IfpV0Y5HUiwNbVAB1nwlfaeE
+name: crop_4_3
+label: 'Crop 4:3'
+effects:
+  a83d503f-1de2-47a2-a962-fcec5f22b6dd:
+    uuid: a83d503f-1de2-47a2-a962-fcec5f22b6dd
+    id: crop_crop
+    weight: 1
+    data:
+      crop_type: crop_4_3
